@@ -1,0 +1,24 @@
+{
+  "name": "zaina-academy",
+  "version": "1.0.0",
+  "description": "Zaina Academy Student Portal",
+  "main": "index.js",
+  "scripts": {
+    "seed": "node scripts/seedAdmin.js",
+    "morning": "node scripts/sendMorningEmail.js",
+    "evening": "node scripts/sendEveningReminder.js",
+    "test-key": "node test-key.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.3.1",
+    "googleapis": "^128.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.3.0",
+    "nodemailer": "^8.0.1",
+    "pdf-parse": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

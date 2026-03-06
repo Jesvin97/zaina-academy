@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Zaina Academy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;background:#080c14;color:#e8e0d0;min-height:100vh;display:flex}
+    .sidebar{width:280px;background:#0d1220;border-right:1px solid rgba(212,175,95,0.12);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100}
+    .sidebar-header{padding:24px;border-bottom:1px solid rgba(212,175,95,0.12)}
+    .sidebar-header h2{font-family:'Cormorant Garamond',serif;color:#d4af5f;font-size:1.25rem}
+    .nav-item{display:flex;align-items:center;gap:14px;padding:14px 24px;color:#b8b0a0;cursor:pointer;border-left:3px solid transparent}
+    .nav-item:hover{background:rgba(212,175,95,0.05)}
+    .nav-item.active{background:rgba(212,175,95,0.1);color:#d4af5f;border-left-color:#d4af5f}
+    .sidebar-footer{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(212,175,95,0.12)}
+    .logout-btn{width:100%;padding:10px;background:transparent;border:1px solid #d4af5f;color:#d4af5f;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600}
+    .main{margin-left:280px;padding:32px;flex:1}
+    .content-header h1{font-family:'Cormorant Garamond',serif;font-size:1.75rem;margin-bottom:8px}
+    .content-header p{color:#7a7060;margin-bottom:32px}
+    .tab-content{display:none}.tab-content.active{display:block}
+    .btn{padding:12px 24px;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;border:none;border-radius:8px;cursor:pointer}
+    .btn-gold{background:linear-gradient(135deg,#d4af5f,#f0d080);color:#080c14}
+    .btn-outline{background:transparent;border:1px solid #d4af5f;color:#d4af5f}
+    .btn-red{background:#e05555;color:white;padding:8px 16px;font-size:0.75rem}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+    .form-group{margin-bottom:1.5rem}
+    .form-label{display:block;margin-bottom:0.5rem;font-size:0.875rem;color:#b8b0a0;text-transform:uppercase;letter-spacing:0.5px}
+    .form-input{width:100%;padding:14px 18px;font-family:'DM Sans',sans-serif;font-size:1rem;color:#e8e0d0;background:#080c14;border:1px solid rgba(212,175,95,0.12);border-radius:8px;outline:none}
+    .form-input:focus{border-color:#d4af5f}
+    textarea.form-input{min-height:150px;resize:vertical}
+    .section-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:#d4af5f;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid rgba(212,175,95,0.12)}
+    .stats{display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap}
+    .stat-card{flex:1;min-width:150px;background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:12px;padding:20px}
+    .stat-label{font-size:0.75rem;color:#7a7060;text-transform:uppercase;letter-spacing:1px}
+    .stat-value{font-size:2rem;font-weight:700;margin-top:4px}
+    .sync-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;margin-top:24px}
+    .sync-day{background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:8px;padding:16px;text-align:center}
+    .sync-day.synced{border-color:#4ade80;background:rgba(74,222,128,0.05)}
+    .sync-day.pending{border-color:#f59e0b;background:rgba(245,158,11,0.05)}
+    .sync-day.future{opacity:0.4}
+    .sync-day-num{font-size:1.5rem;font-weight:700;color:#d4af5f}
+    .sync-day-date{font-size:0.7rem;color:#7a7060;margin:4px 0 8px}
+    .badge{padding:3px 10px;font-size:0.65rem;font-weight:600;text-transform:uppercase;border-radius:20px}
+    .badge-green{background:rgba(74,222,128,0.15);color:#4ade80}
+    .badge-yellow{background:rgba(245,158,11,0.15);color:#f59e0b}
+    .badge-gray{background:rgba(122,112,96,0.15);color:#7a7060}
+    .announcement{background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:12px;padding:24px;margin-bottom:16px}
+    .announcement h3{font-family:'Cormorant Garamond',serif;color:#d4af5f;font-size:1.25rem}
+    .ann-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .ann-date{font-size:0.75rem;color:#7a7060}
+    .ann-body{color:#b8b0a0;line-height:1.7;white-space:pre-wrap}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:14px 16px;text-align:left;border-bottom:1px solid rgba(212,175,95,0.12)}
+    th{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;color:#7a7060;background:#111827}
+    .empty{text-align:center;padding:40px;color:#7a7060}
+    .toast-box{position:fixed;top:20px;right:20px;z-index:1100}
+    .toast{padding:16px 24px;background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:8px;margin-bottom:10px;min-width:280px}
+    .toast-ok{border-left:4px solid #4ade80}.toast-err{border-left:4px solid #e05555}
+    .mobile-btn{display:none;position:fixed;top:16px;left:16px;z-index:101;width:48px;height:48px;background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:8px;align-items:center;justify-content:center;cursor:pointer;font-size:1.25rem;color:#d4af5f}
+    .overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99}.overlay.show{display:block}
+    @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:20px;padding-top:70px}.mobile-btn{display:flex}.stats{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <button class="mobile-btn" id="menuBtn">☰</button>
+  <div class="overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header"><h2>✦ Zaina Admin</h2></div>
+    <nav style="flex:1;padding:16px 0">
+      <div class="nav-item active" data-tab="sync"><span>🔄</span><span>Drive Sync</span></div>
+      <div class="nav-item" data-tab="announcements"><span>📢</span><span>Announcements</span></div>
+      <div class="nav-item" data-tab="students"><span>👥</span><span>Students</span></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="margin-bottom:12px"><strong>Admin</strong><br><span style="font-size:0.75rem;color:#7a7060">Administrator</span></div>
+      <button class="logout-btn" id="logoutBtn">Log Out</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="syncTab" class="tab-content active">
+      <div class="content-header"><h1>🔄 Drive Sync</h1><p>Manage syllabus synchronization</p></div>
+      <div style="display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+        <button class="btn btn-gold" id="syncBtn" onclick="syncNow()">🔄 Sync Today's PDF</button>
+        <button class="btn btn-outline" onclick="loadSync()">↻ Refresh</button>
+      </div>
+      <div id="syncContent"><p>Loading...</p></div>
+    </div>
+    <div id="announcementsTab" class="tab-content">
+      <div class="content-header"><h1>📢 Announcements</h1><p>Post and manage announcements</p></div>
+      <h3 class="section-title">Post New</h3>
+      <form id="annForm" style="max-width:600px;margin-bottom:48px">
+        <div class="form-group"><label class="form-label">Title</label><input type="text" id="annTitle" class="form-input" required></div>
+        <div class="form-group"><label class="form-label">Body</label><textarea id="annBody" class="form-input" required></textarea></div>
+        <button type="submit" class="btn btn-gold">📤 Post</button>
+      </form>
+      <h3 class="section-title">Recent</h3>
+      <div id="annList"><p>Loading...</p></div>
+    </div>
+    <div id="studentsTab" class="tab-content">
+      <div class="content-header"><h1>👥 Students</h1><p>Manage student accounts</p></div>
+      <h3 class="section-title">Add Student</h3>
+      <form id="studentForm" style="max-width:600px;margin-bottom:48px">
+        <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="sName" class="form-input" required></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="sEmail" class="form-input" required></div>
+        <div class="form-group"><label class="form-label">Password</label><input type="password" id="sPass" class="form-input" required minlength="6"></div>
+        <button type="submit" class="btn btn-gold">➕ Add Student</button>
+      </form>
+      <h3 class="section-title">All Students</h3>
+      <div id="studentList"><p>Loading...</p></div>
+    </div>
+  </main>
+  <div class="toast-box" id="toasts"></div>
+  <script>
+    const token=localStorage.getItem('zaina_token');const user=JSON.parse(localStorage.getItem('zaina_user')||'{}');
+    if(!token||user.role!=='admin'){window.location.href='/index.html';}
+    function toast(msg,ok){const t=document.createElement('div');t.className='toast '+(ok?'toast-ok':'toast-err');t.textContent=msg;document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3000);}
+    function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+    function fmtDate(d){return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});}
+    async function api(url,opt){const r=await fetch(url,{...opt,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,...(opt&&opt.headers||{})}});if(r.status===401){localStorage.clear();window.location.href='/index.html';}return r.json();}
+    async function loadSync(){
+      const c=document.getElementById('syncContent');
+      try{const data=await api('/api/syllabus-status');
+        const synced=data.status.filter(s=>s.status==='synced').length;
+        const pending=data.status.filter(s=>s.status==='pending').length;
+        c.innerHTML='<div class="stats"><div class="stat-card"><div class="stat-label">Current Day</div><div class="stat-value" style="color:#d4af5f">'+data.currentDay+'</div></div><div class="stat-card"><div class="stat-label">Synced</div><div class="stat-value" style="color:#4ade80">'+synced+'</div></div><div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" style="color:#f59e0b">'+pending+'</div></div></div><div class="sync-grid">'+data.status.map(d=>'<div class="sync-day '+d.status+'"><div class="sync-day-num">'+d.dayNumber+'</div><div class="sync-day-date">'+fmtDate(d.date)+'</div><span class="badge badge-'+(d.status==='synced'?'green':d.status==='pending'?'yellow':'gray')+'">'+d.status+'</span></div>').join('')+'</div>';
+      }catch(e){c.innerHTML='<div class="empty">Error: '+e.message+'</div>';}
+    }
+    window.syncNow=async function(){
+      const btn=document.getElementById('syncBtn');btn.disabled=true;btn.textContent='Syncing...';
+      try{const data=await api('/api/sync-syllabus',{method:'POST',body:JSON.stringify({})});
+        if(data.error)throw new Error(data.error);toast('Synced Day '+data.dayNumber+'!',true);loadSync();
+      }catch(e){toast(e.message,false);}finally{btn.disabled=false;btn.textContent='🔄 Sync Today\'s PDF';}
+    };
+    async function loadAnn(){
+      const c=document.getElementById('annList');
+      try{const data=await api('/api/announcements');
+        if(!data.announcements||!data.announcements.length){c.innerHTML='<div class="empty">No announcements yet</div>';return;}
+        c.innerHTML=data.announcements.map(a=>'<div class="announcement"><div class="ann-header"><h3>'+esc(a.title)+'</h3><div><span class="ann-date">'+fmtDate(a.createdAt)+'</span> <button class="btn btn-red" onclick="delAnn(\''+a._id+'\')">🗑️</button></div></div><div class="ann-body">'+esc(a.body)+'</div></div>').join('');
+      }catch(e){c.innerHTML='<div class="empty">Error</div>';}
+    }
+    window.delAnn=async function(id){
+      if(!confirm('Delete this announcement?'))return;
+      try{await api('/api/announcements/'+id,{method:'DELETE'});toast('Deleted!',true);loadAnn();}catch(e){toast(e.message,false);}
+    };
+    document.getElementById('annForm').addEventListener('submit',async e=>{e.preventDefault();
+      try{const data=await api('/api/announcements',{method:'POST',body:JSON.stringify({title:document.getElementById('annTitle').value,body:document.getElementById('annBody').value})});
+        if(data.error)throw new Error(data.error);toast('Posted!',true);document.getElementById('annForm').reset();loadAnn();
+      }catch(e){toast(e.message,false);}
+    });
+    async function loadStudents(){
+      const c=document.getElementById('studentList');
+      try{const data=await api('/api/students');
+        if(!data.students||!data.students.length){c.innerHTML='<div class="empty">No students yet</div>';return;}
+        c.innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Joined</th></tr></thead><tbody>'+data.students.map(s=>'<tr><td>'+esc(s.name)+'</td><td>'+esc(s.email)+'</td><td>'+fmtDate(s.createdAt)+'</td></tr>').join('')+'</tbody></table></div>';
+      }catch(e){c.innerHTML='<div class="empty">Error</div>';}
+    }
+    document.getElementById('studentForm').addEventListener('submit',async e=>{e.preventDefault();
+      try{const data=await api('/api/students',{method:'POST',body:JSON.stringify({name:document.getElementById('sName').value,email:document.getElementById('sEmail').value,password:document.getElementById('sPass').value})});
+        if(data.error)throw new Error(data.error);toast('Student added!',true);document.getElementById('studentForm').reset();loadStudents();
+      }catch(e){toast(e.message,false);}
+    });
+    document.querySelectorAll('.nav-item').forEach(item=>{item.addEventListener('click',()=>{
+      document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));item.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+      document.getElementById(item.dataset.tab+'Tab').classList.add('active');
+      document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');
+      if(item.dataset.tab==='sync')loadSync();if(item.dataset.tab==='announcements')loadAnn();if(item.dataset.tab==='students')loadStudents();
+    });});
+    document.getElementById('menuBtn').addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');});
+    document.getElementById('overlay').addEventListener('click',()=>{document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');});
+    document.getElementById('logoutBtn').addEventListener('click',()=>{localStorage.clear();window.location.href='/index.html';});
+    loadSync();
+  </script>
+</body>
+</html>

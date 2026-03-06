@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Zaina Academy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',sans-serif;background:#080c14;color:#e8e0d0;min-height:100vh;display:flex}
+    .sidebar{width:280px;background:#0d1220;border-right:1px solid rgba(212,175,95,0.12);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100}
+    .sidebar-header{padding:24px;border-bottom:1px solid rgba(212,175,95,0.12)}
+    .sidebar-header h2{font-family:'Cormorant Garamond',serif;color:#d4af5f;font-size:1.25rem}
+    .nav-item{display:flex;align-items:center;gap:14px;padding:14px 24px;color:#b8b0a0;cursor:pointer;border-left:3px solid transparent}
+    .nav-item:hover{background:rgba(212,175,95,0.05);color:#e8e0d0}
+    .nav-item.active{background:rgba(212,175,95,0.1);color:#d4af5f;border-left-color:#d4af5f}
+    .sidebar-footer{margin-top:auto;padding:16px 24px;border-top:1px solid rgba(212,175,95,0.12)}
+    .user-info{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .user-avatar{width:40px;height:40px;background:linear-gradient(135deg,#d4af5f,#f0d080);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#080c14;font-weight:600}
+    .user-name{font-weight:600}.user-role{font-size:0.75rem;color:#7a7060;text-transform:uppercase}
+    .logout-btn{width:100%;padding:10px;background:transparent;border:1px solid #d4af5f;color:#d4af5f;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600}
+    .main{margin-left:280px;padding:32px;flex:1}
+    .content-header h1{font-family:'Cormorant Garamond',serif;font-size:1.75rem;margin-bottom:8px}
+    .content-header p{color:#7a7060;margin-bottom:32px}
+    .tab-content{display:none}.tab-content.active{display:block}
+    .day-card{background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:12px;margin-bottom:16px;overflow:hidden}
+    .day-card.today{border-color:#d4af5f;box-shadow:0 0 20px rgba(212,175,95,0.15)}
+    .day-card-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer}
+    .day-card-header:hover{background:rgba(212,175,95,0.03)}
+    .day-num{width:48px;height:48px;background:#111827;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.125rem;color:#b8b0a0}
+    .day-card.today .day-num{background:linear-gradient(135deg,#d4af5f,#f0d080);color:#080c14}
+    .day-info{margin-left:16px;flex:1}
+    .day-info h3{font-family:'Cormorant Garamond',serif;font-size:1.125rem}
+    .day-info p{color:#7a7060;font-size:0.875rem;margin:0}
+    .badge{padding:4px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;border-radius:20px;background:rgba(212,175,95,0.15);color:#d4af5f;margin-left:8px}
+    .toggle{color:#7a7060;font-size:1.25rem;transition:transform 0.3s}
+    .day-card.expanded .toggle{transform:rotate(180deg)}
+    .day-card-content{max-height:0;overflow:hidden;transition:max-height 0.3s}
+    .day-card.expanded .day-card-content{max-height:5000px}
+    .day-card-body{padding:0 24px 24px;border-top:1px solid rgba(212,175,95,0.12)}
+    .syllabus-text{padding-top:20px;line-height:1.8;white-space:pre-wrap;color:#b8b0a0}
+    .announcement{background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:12px;padding:24px;margin-bottom:16px}
+    .announcement h3{font-family:'Cormorant Garamond',serif;color:#d4af5f;font-size:1.25rem;margin-bottom:8px}
+    .announcement .date{font-size:0.75rem;color:#7a7060;margin-bottom:12px}
+    .announcement .body{color:#b8b0a0;line-height:1.7;white-space:pre-wrap}
+    .empty{text-align:center;padding:60px 20px;color:#7a7060}
+    .empty-icon{font-size:4rem;margin-bottom:16px;opacity:0.5}
+    .report-info{background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:12px;padding:24px;margin-bottom:24px}
+    .report-info h3{color:#d4af5f;margin-bottom:12px}
+    .report-email{display:inline-block;padding:8px 16px;background:#111827;border-radius:6px;font-family:monospace;color:#f0d080}
+    .mobile-btn{display:none;position:fixed;top:16px;left:16px;z-index:101;width:48px;height:48px;background:#0d1220;border:1px solid rgba(212,175,95,0.12);border-radius:8px;align-items:center;justify-content:center;cursor:pointer;font-size:1.25rem;color:#d4af5f}
+    .overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99}
+    .overlay.show{display:block}
+    @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:20px;padding-top:70px}.mobile-btn{display:flex}}
+  </style>
+</head>
+<body>
+  <button class="mobile-btn" id="menuBtn">☰</button>
+  <div class="overlay" id="overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header"><h2>✦ Zaina Academy</h2></div>
+    <nav style="flex:1;padding:16px 0">
+      <div class="nav-item active" data-tab="syllabus"><span>📚</span><span>Syllabus</span></div>
+      <div class="nav-item" data-tab="updates"><span>📢</span><span>Updates</span></div>
+      <div class="nav-item" data-tab="reports"><span>📝</span><span>Reports</span></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="avatar">S</div>
+        <div><div class="user-name" id="userName">Student</div><div class="user-role">Student</div></div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Log Out</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="syllabusTab" class="tab-content active">
+      <div class="content-header"><h1>📚 Daily Syllabus</h1><p>Your learning journey, one day at a time</p></div>
+      <div id="syllabusContent"><p>Loading...</p></div>
+    </div>
+    <div id="updatesTab" class="tab-content">
+      <div class="content-header"><h1>📢 Announcements</h1><p>Latest updates from the academy</p></div>
+      <div id="updatesContent"><p>Loading...</p></div>
+    </div>
+    <div id="reportsTab" class="tab-content">
+      <div class="content-header"><h1>📝 Your Reports</h1><p>Track your daily report submissions</p></div>
+      <div id="reportsContent"><p>Loading...</p></div>
+    </div>
+  </main>
+  <script>
+    const token=localStorage.getItem('zaina_token');const user=JSON.parse(localStorage.getItem('zaina_user')||'{}');
+    if(!token||!user.role||user.role==='admin'){window.location.href='/index.html';}
+    document.getElementById('userName').textContent=user.name||'Student';
+    document.getElementById('avatar').textContent=(user.name||'S')[0].toUpperCase();
+    async function api(url){const r=await fetch(url,{headers:{'Authorization':'Bearer '+token}});if(r.status===401){localStorage.clear();window.location.href='/index.html';}return r.json();}
+    function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+    function fmtDate(d){return new Date(d).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
+    async function loadSyllabus(){
+      const c=document.getElementById('syllabusContent');
+      try{const data=await api('/api/syllabus');
+        if(data.currentDay<1){c.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>Course Hasn\'t Started</h3><p>Starts '+fmtDate(data.courseStartDate)+'</p></div>';return;}
+        if(!data.syllabus||!data.syllabus.length){c.innerHTML='<div class="empty"><div class="empty-icon">📭</div><h3>No Syllabus Yet</h3></div>';return;}
+        c.innerHTML=[...data.syllabus].reverse().map(d=>'<div class="day-card'+(d.isToday?' today expanded':'')+'" data-day="'+d.dayNumber+'"><div class="day-card-header" onclick="toggle('+d.dayNumber+')"><div style="display:flex;align-items:center"><div class="day-num">'+d.dayNumber+'</div><div class="day-info"><h3>Day '+d.dayNumber+(d.isToday?'<span class="badge">Today</span>':'')+'</h3><p>'+fmtDate(d.date)+'</p></div></div><span class="toggle">▼</span></div><div class="day-card-content"><div class="day-card-body"><div class="syllabus-text">'+esc(d.content)+'</div></div></div></div>').join('');
+      }catch(e){c.innerHTML='<div class="empty"><h3>Error</h3><p>'+e.message+'</p></div>';}
+    }
+    window.toggle=function(n){const c=document.querySelector('[data-day="'+n+'"]');if(c)c.classList.toggle('expanded');};
+    async function loadUpdates(){
+      const c=document.getElementById('updatesContent');
+      try{const data=await api('/api/announcements');
+        if(!data.announcements||!data.announcements.length){c.innerHTML='<div class="empty"><div class="empty-icon">📭</div><h3>No Announcements</h3></div>';return;}
+        c.innerHTML=data.announcements.map(a=>'<div class="announcement"><h3>'+esc(a.title)+'</h3><div class="date">'+fmtDate(a.createdAt)+'</div><div class="body">'+esc(a.body)+'</div></div>').join('');
+      }catch(e){c.innerHTML='<div class="empty"><h3>Error</h3></div>';}
+    }
+    async function loadReports(){
+      const c=document.getElementById('reportsContent');
+      try{const data=await api('/api/reports');
+        c.innerHTML='<div class="report-info"><h3>📧 Submit Reports To:</h3><div class="report-email">'+(data.reportEmail||'reports@zainaacademy.com')+'</div></div>'+(data.reports&&data.reports.length?'<div>'+data.reports.map(r=>'<div class="announcement"><h3>'+esc(r.title)+'</h3><p>'+fmtDate(r.submittedAt)+'</p></div>').join('')+'</div>':'<div class="empty"><div class="empty-icon">📝</div><h3>No Reports Yet</h3></div>');
+      }catch(e){c.innerHTML='<div class="empty"><h3>Error</h3></div>';}
+    }
+    document.querySelectorAll('.nav-item').forEach(item=>{item.addEventListener('click',()=>{
+      document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));item.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+      const tab=item.dataset.tab;document.getElementById(tab+'Tab').classList.add('active');
+      document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');
+      if(tab==='syllabus')loadSyllabus();if(tab==='updates')loadUpdates();if(tab==='reports')loadReports();
+    });});
+    document.getElementById('menuBtn').addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');});
+    document.getElementById('overlay').addEventListener('click',()=>{document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');});
+    document.getElementById('logoutBtn').addEventListener('click',()=>{localStorage.clear();window.location.href='/index.html';});
+    loadSyllabus();
+  </script>
+</body>
+</html>
