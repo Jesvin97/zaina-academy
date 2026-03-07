@@ -5,3 +5,9 @@
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
+{
+  "crons": [{
+    "path": "/api/daily-mailer",
+    "schedule": "0 19 * * *"
+  }]
+}
