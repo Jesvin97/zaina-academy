@@ -81,10 +81,54 @@
       <div id="updatesContent"><p>Loading...</p></div>
     </div>
     <div id="reportsTab" class="tab-content">
-      <div class="content-header"><h1>📝 Your Reports</h1><p>Track your daily report submissions</p></div>
-      <div id="reportsContent"><p>Loading...</p></div>
+      <div class="content-header">
+        <h1>📝 Submit Report</h1>
+        <p>Upload your daily report directly to Google Drive</p>
+      </div>
+
+      <div class="upload-card">
+        <h3>Daily Report Upload</h3>
+        <p class="sub">Accepted formats: PDF, DOC, DOCX &nbsp;·&nbsp; Max size: 20 MB</p>
+        <div class="field-row">
+          <div class="field">
+            <label>Your Name</label>
+            <input type="text" id="rName" placeholder="Full name" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Day Number</label>
+            <input type="number" id="rDay" placeholder="e.g. 7" min="1">
+          </div>
+        </div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+          <div class="drop-icon">📄</div>
+          <div class="drop-text">Drag & drop your file here</div>
+          <div class="drop-hint">or click to browse</div>
+        </div>
+        <div class="file-chosen" id="fileChosen">
+          <span style="font-size:1.4rem">📎</span>
+          <span class="file-chosen-name" id="fileChosenName"></span>
+          <button class="file-chosen-remove" id="removeFile" title="Remove">✕</button>
+        </div>
+        <button class="upload-btn" id="uploadBtn" disabled>
+          <span>☁️</span><span id="uploadBtnText">Upload to Google Drive</span>
+        </button>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-label" id="progressLabel">Uploading…</div>
+        </div>
+      </div>
+
+      <!-- Session submission history -->
+      <div class="upload-card" id="historyCard" style="display:none">
+        <div class="section-label">Submitted this session</div>
+        <div id="submissionsList"></div>
+      </div>
     </div>
   </main>
+
+  <div class="toast" id="toast"></div>
+
   <script>
     const token=localStorage.getItem('zaina_token');const user=JSON.parse(localStorage.getItem('zaina_user')||'{}');
     if(!token||!user.role||user.role==='admin'){window.location.href='/index.html';}
@@ -109,18 +153,125 @@
         c.innerHTML=data.announcements.map(a=>'<div class="announcement"><h3>'+esc(a.title)+'</h3><div class="date">'+fmtDate(a.createdAt)+'</div><div class="body">'+esc(a.body)+'</div></div>').join('');
       }catch(e){c.innerHTML='<div class="empty"><h3>Error</h3></div>';}
     }
-    async function loadReports(){
-      const c=document.getElementById('reportsContent');
-      try{const data=await api('/api/reports');
-        c.innerHTML='<div class="report-info"><h3>📧 Submit Reports To:</h3><div class="report-email">'+(data.reportEmail||'reports@zainaacademy.com')+'</div></div>'+(data.reports&&data.reports.length?'<div>'+data.reports.map(r=>'<div class="announcement"><h3>'+esc(r.title)+'</h3><p>'+fmtDate(r.submittedAt)+'</p></div>').join('')+'</div>':'<div class="empty"><div class="empty-icon">📝</div><h3>No Reports Yet</h3></div>');
-      }catch(e){c.innerHTML='<div class="empty"><h3>Error</h3></div>';}
+    const ALLOWED = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    let chosenFile = null;
+
+    const dropZone       = document.getElementById('dropZone');
+    const fileInput      = document.getElementById('fileInput');
+    const fileChosen     = document.getElementById('fileChosen');
+    const fileChosenName = document.getElementById('fileChosenName');
+    const uploadBtn      = document.getElementById('uploadBtn');
+    const progressWrap   = document.getElementById('progressWrap');
+    const progressFill   = document.getElementById('progressFill');
+    const progressLabel  = document.getElementById('progressLabel');
+
+    function setFile(f) {
+      if (!f) return;
+      if (!ALLOWED.includes(f.type)) { showToast('Only PDF, DOC, or DOCX files are allowed.', 'error'); return; }
+      if (f.size > 20 * 1024 * 1024) { showToast('File exceeds the 20 MB limit.', 'error'); return; }
+      chosenFile = f;
+      fileChosenName.textContent = f.name;
+      fileChosen.classList.add('show');
+      dropZone.style.display = 'none';
+      checkReady();
+    }
+    function clearFile() {
+      chosenFile = null; fileInput.value = '';
+      fileChosen.classList.remove('show'); dropZone.style.display = '';
+      checkReady();
+    }
+    function checkReady() {
+      uploadBtn.disabled = !(chosenFile && document.getElementById('rName').value.trim() && document.getElementById('rDay').value.trim());
+    }
+
+    fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
+    document.getElementById('removeFile').addEventListener('click', clearFile);
+    document.getElementById('rName').addEventListener('input', checkReady);
+    document.getElementById('rDay').addEventListener('input', checkReady);
+    dropZone.addEventListener('dragover',  e  => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop',      e  => { e.preventDefault(); dropZone.classList.remove('drag-over'); setFile(e.dataTransfer.files[0]); });
+
+    function animateBar(target) {
+      let cur = 0;
+      const iv = setInterval(() => {
+        if (cur >= target) { clearInterval(iv); return; }
+        cur = Math.min(cur + 2, target);
+        progressFill.style.width = cur + '%';
+        progressLabel.textContent = 'Uploading… ' + cur + '%';
+      }, 35);
+      return iv;
+    }
+
+    uploadBtn.addEventListener('click', async () => {
+      const name = document.getElementById('rName').value.trim();
+      const day  = document.getElementById('rDay').value.trim();
+      if (!chosenFile || !name || !day) return;
+
+      uploadBtn.disabled = true;
+      document.getElementById('uploadBtnText').textContent = 'Uploading…';
+      progressWrap.classList.add('show');
+      progressFill.style.width = '0%';
+      const iv = animateBar(85);
+
+      const fd = new FormData();
+      fd.append('file',        chosenFile);
+      fd.append('studentName', name);
+      fd.append('dayNumber',   day);
+
+      try {
+        const res  = await fetch('/api/upload-report', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+        clearInterval(iv);
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
+
+        progressFill.style.width  = '100%';
+        progressLabel.textContent = '✓ Upload complete';
+        showToast('✅ Report uploaded successfully!', 'success');
+
+        const prev = JSON.parse(sessionStorage.getItem('zaina_subs') || '[]');
+        prev.unshift({ name: data.fileName, link: data.link, date: new Date().toISOString() });
+        sessionStorage.setItem('zaina_subs', JSON.stringify(prev.slice(0, 30)));
+        renderHistory();
+
+        setTimeout(() => {
+          clearFile();
+          document.getElementById('rDay').value = '';
+          progressWrap.classList.remove('show');
+          progressFill.style.width = '0%';
+          document.getElementById('uploadBtnText').textContent = 'Upload to Google Drive';
+          uploadBtn.disabled = false;
+        }, 1800);
+
+      } catch (err) {
+        clearInterval(iv);
+        progressWrap.classList.remove('show');
+        showToast('❌ ' + err.message, 'error');
+        document.getElementById('uploadBtnText').textContent = 'Upload to Google Drive';
+        uploadBtn.disabled = false;
+      }
+    });
+
+    function renderHistory() {
+      const list = JSON.parse(sessionStorage.getItem('zaina_subs') || '[]');
+      const card = document.getElementById('historyCard');
+      const ul   = document.getElementById('submissionsList');
+      if (!list.length) { card.style.display = 'none'; return; }
+      card.style.display = '';
+      ul.innerHTML = list.map(s =>
+        '<div class="sub-item"><span style="font-size:1.3rem">📄</span>'
+        + '<div class="sub-item-info"><div class="sub-item-name">' + esc(s.name) + '</div>'
+        + '<div class="sub-item-date">' + new Date(s.date).toLocaleString() + '</div></div>'
+        + (s.link ? '<a class="sub-item-link" href="' + esc(s.link) + '" target="_blank">View ↗</a>' : '')
+        + '</div>'
+      ).join('');
     }
     document.querySelectorAll('.nav-item').forEach(item=>{item.addEventListener('click',()=>{
       document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));item.classList.add('active');
       document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
       const tab=item.dataset.tab;document.getElementById(tab+'Tab').classList.add('active');
       document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');
-      if(tab==='syllabus')loadSyllabus();if(tab==='updates')loadUpdates();if(tab==='reports')loadReports();
+      if(tab==='syllabus')loadSyllabus();if(tab==='updates')loadUpdates();if(tab==='reports')renderHistory();
     });});
     document.getElementById('menuBtn').addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');});
     document.getElementById('overlay').addEventListener('click',()=>{document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');});
