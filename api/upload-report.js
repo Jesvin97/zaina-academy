@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   if (!file) return res.status(400).json({ error: 'No file received' });
 
   // ── 2. Validate env vars ─────────────────────────────────────────────────
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID_2;
+  const folderId = process.env.GOOGLE_DRIVE_REPORTS_FOLDER_ID;
   if (!folderId) return res.status(500).json({ error: 'GOOGLE_DRIVE_FOLDER_ID_2 is not set in Vercel environment variables' });
 
   let credentials;
