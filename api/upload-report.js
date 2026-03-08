@@ -80,6 +80,7 @@ export default async function handler(req, res) {
         body:     fs.createReadStream(file.filepath),
       },
       fields: 'id, name, webViewLink',
+      supportsAllDrives:true
     });
 
     return res.status(200).json({
