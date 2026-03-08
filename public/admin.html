@@ -127,10 +127,27 @@
       }catch(e){c.innerHTML='<div class="empty">Error: '+e.message+'</div>';}
     }
     window.syncNow=async function(){
-      const btn=document.getElementById('syncBtn');btn.disabled=true;btn.textContent='Syncing...';
-      try{const data=await api('/api/sync-syllabus',{method:'POST',body:JSON.stringify({})});
-        if(data.error)throw new Error(data.error);toast('Synced Day '+data.dayNumber+'!',true);loadSync();
-      }catch(e){toast(e.message,false);}finally{btn.disabled=false;btn.textContent='🔄 Sync Today\'s PDF';}
+        var btn=document.getElementById('syncBtn');
+        btn.disabled=true;
+        btn.textContent='⏳ Syncing & Emailing...';
+        try{
+            var data=await api('/api/sync-syllabus',{method:'POST',body:JSON.stringify({})});
+            if(data.error)throw new Error(data.error);
+            var msg='Synced Day '+data.dayNumber+'!';
+            if(data.emailsSent>0){
+                msg+=' Emailed '+data.emailsSent+' student'+(data.emailsSent>1?'s':'')+'!';
+            }
+            if(data.emailsFailed>0){
+                msg+=' ('+data.emailsFailed+' failed)';
+            }
+            toast(msg,true);
+            loadSync();
+        }catch(e){
+            toast(e.message,false);
+        }finally{
+            btn.disabled=false;
+            btn.textContent='🔄 Sync Today\'s PDF';
+        }
     };
     async function loadAnn(){
       const c=document.getElementById('annList');
