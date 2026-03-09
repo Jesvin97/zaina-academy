@@ -1,35 +1,29 @@
 // api/upload-report.js
-// Receives a file from the dashboard and uploads it to your secondary Google Drive folder.
+// Uploads student reports to a personal Google Drive folder using OAuth2.
 //
 // Required Vercel environment variables:
-//   GOOGLE_SERVICE_ACCOUNT_KEY   → the full JSON of your service account key (as a string)
-//   GOOGLE_DRIVE_FOLDER_ID_2     → the folder ID of your secondary Google Drive folder
-//
-// How to get the folder ID:
-//   Open the folder in Google Drive → copy the last part of the URL
-//   e.g. https://drive.google.com/drive/folders/1A2B3C4D5E  →  ID is "1A2B3C4D5E"
-//
-// Share that folder with your service account email (e.g. xxx@project.iam.gserviceaccount.com)
-// and give it Editor access.
+//   GOOGLE_CLIENT_ID        → from Google Cloud Console → Credentials → OAuth 2.0 Client
+//   GOOGLE_CLIENT_SECRET    → from Google Cloud Console → Credentials → OAuth 2.0 Client
+//   GOOGLE_REFRESH_TOKEN    → from OAuth Playground (developers.google.com/oauthplayground)
+//   GOOGLE_DRIVE_FOLDER_ID_2 → folder ID from your personal Google Drive URL
 
 import { google } from 'googleapis';
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
 
 export const config = {
-  api: { bodyParser: false }, // required so formidable can parse the multipart body
+  api: { bodyParser: false },
 };
 
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── 1. Parse the multipart upload ───────────────────────────────────────
-  const form = new IncomingForm({ maxFileSize: 20 * 1024 * 1024 }); // 20 MB
+  // ── 1. Parse multipart form ──────────────────────────────────────────────
+  const form = new IncomingForm({ maxFileSize: 20 * 1024 * 1024 });
   let fields, files;
   try {
     [fields, files] = await new Promise((resolve, reject) =>
@@ -45,28 +39,26 @@ export default async function handler(req, res) {
 
   if (!file) return res.status(400).json({ error: 'No file received' });
 
-  // ── 2. Validate env vars ─────────────────────────────────────────────────
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID_2;
-  if (!folderId) return res.status(500).json({ error: 'GOOGLE_DRIVE_FOLDER_ID_2 is not set in Vercel environment variables' });
+  // ── 2. Check env vars ────────────────────────────────────────────────────
+  const folderId     = process.env.GOOGLE_DRIVE_FOLDER_ID_2;
+  const clientId     = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-  let credentials;
-  try {
-    credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
-  } catch {
-    return res.status(500).json({ error: 'GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON' });
-  }
+  if (!folderId)     return res.status(500).json({ error: 'GOOGLE_DRIVE_FOLDER_ID_2 is not set' });
+  if (!clientId)     return res.status(500).json({ error: 'GOOGLE_CLIENT_ID is not set' });
+  if (!clientSecret) return res.status(500).json({ error: 'GOOGLE_CLIENT_SECRET is not set' });
+  if (!refreshToken) return res.status(500).json({ error: 'GOOGLE_REFRESH_TOKEN is not set' });
 
-  // ── 3. Authenticate with the service account ─────────────────────────────
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  });
-  const drive = google.drive({ version: 'v3', auth });
+  // ── 3. Auth via OAuth2 — uploads as you, directly into your My Drive ─────
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
 
-  // ── 4. Build a clean file name and upload ────────────────────────────────
+  const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+  // ── 4. Build filename and upload ─────────────────────────────────────────
   const ext      = (file.originalFilename || 'report').split('.').pop().toLowerCase();
   const date     = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  // Example result: "Day7 - Sara Ahmed - 2026-03-08.pdf"
   const fileName = `Day${dayNumber} - ${studentName} - ${date}.${ext}`;
 
   try {
@@ -80,7 +72,6 @@ export default async function handler(req, res) {
         body:     fs.createReadStream(file.filepath),
       },
       fields: 'id, name, webViewLink',
-      supportsAllDrives:true
     });
 
     return res.status(200).json({
